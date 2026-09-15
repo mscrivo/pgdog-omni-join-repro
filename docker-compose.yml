@@ -1,0 +1,28 @@
+services:
+  shard0: &shard
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: app
+    volumes:
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U app -d app']
+      interval: 2s
+      timeout: 2s
+      retries: 20
+  shard1: *shard
+  shard2: *shard
+
+  pgdog:
+    image: ${PGDOG_IMAGE:-ghcr.io/pgdogdev/pgdog-enterprise:v2026-09-10}
+    depends_on:
+      shard0: { condition: service_healthy }
+      shard1: { condition: service_healthy }
+      shard2: { condition: service_healthy }
+    volumes:
+      - ./pgdog/${PGDOG_CONFIG:-pgdog.toml}:/pgdog/pgdog.toml:ro
+      - ./pgdog/users.toml:/pgdog/users.toml:ro
+    ports:
+      - '${PGDOG_PORT:-16432}:6432' # host port for manual psql; run.sh goes through the docker network

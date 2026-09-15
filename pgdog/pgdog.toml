@@ -1,0 +1,31 @@
+[general]
+host = "0.0.0.0"
+port = 6432
+omnisharded_sticky = true
+
+[[databases]]
+name = "app"
+host = "shard0"
+shard = 0
+
+[[databases]]
+name = "app"
+host = "shard1"
+shard = 1
+
+[[databases]]
+name = "app"
+host = "shard2"
+shard = 2
+
+# Every table with an org_id column is sharded by it.
+[[sharded_tables]]
+database = "app"
+column = "org_id"
+
+# listed_with_key has an org_id column but is replicated to every shard.
+# Its join partner unlisted_no_key is not listed: this is the failing configuration.
+[[omnisharded_tables]]
+database = "app"
+sticky = true
+tables = ["listed_with_key"]
